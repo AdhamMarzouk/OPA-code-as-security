@@ -47,7 +47,7 @@ resource "aws_security_group" "public_ssh" {
   description = "Non-compliant: SSH open to the entire internet"
 
   ingress {
-    description = "SSH open to the entire internet — VIOLATION"
+    description = "SSH open to the entire internet - VIOLATION"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
