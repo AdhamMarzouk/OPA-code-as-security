@@ -6,22 +6,27 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ─── Policy 1: S3 Encryption ──────────────────────────────────────────────────
-# Compliant: server-side encryption is configured with AES256.
+# Compliant: server-side encryption is configured via standalone resource (AWS
+# provider v5+ requires aws_s3_bucket_server_side_encryption_configuration).
 resource "aws_s3_bucket" "compliant" {
   bucket = "${var.project_name}-compliant-bucket"
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
 
   tags = {
     Name        = "compliant-bucket"
     Environment = "demo"
     Compliance  = "pass"
+  }
+}
+
+# NOTE: The resource name "compliant" deliberately matches aws_s3_bucket.compliant
+# so the OPA policy can correlate them by Terraform resource name.
+resource "aws_s3_bucket_server_side_encryption_configuration" "compliant" {
+  bucket = aws_s3_bucket.compliant.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
   }
 }
 
