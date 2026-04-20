@@ -107,7 +107,20 @@ jobs:
             --policies "policies/" \
             --output   "reports/compliance_report.txt"
 
-      # ── Step 8: Upload Compliance Report ────────────────────────────────────
+      # ── Step 8: Ensure compliance report exists ─────────────────────────────
+      # If an earlier step failed (terraform, OPA error, etc.) the Python
+      # script never ran and the report file was never created.  Write a
+      # minimal error report so the upload step always has a file to attach.
+      - name: Ensure compliance report exists
+        if: always()
+        run: |
+          mkdir -p reports
+          if [ ! -f reports/compliance_report.txt ]; then
+            echo "Pipeline error: OPA evaluation did not complete (see earlier step logs)." \
+              > reports/compliance_report.txt
+          fi
+
+      # ── Step 9: Upload Compliance Report ────────────────────────────────────
       # Runs even on failure (if: always()) so violation details are always
       # accessible as a downloadable artifact in the Actions UI.
       - name: Upload Compliance Report
