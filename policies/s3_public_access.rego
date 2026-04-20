@@ -24,8 +24,7 @@
 
 package terraform.security
 
-import future.keywords.contains
-import future.keywords.if
+import future.keywords
 
 # ─── Main Rule ────────────────────────────────────────────────────────────────
 # Produces a denial message listing which specific flags are not set to true.

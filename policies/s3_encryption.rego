@@ -31,8 +31,7 @@
 
 package terraform.security
 
-import future.keywords.contains
-import future.keywords.if
+import future.keywords
 
 # ─── Main Rule ────────────────────────────────────────────────────────────────
 # Deny any S3 bucket that lacks a matching SSE configuration resource.
