@@ -1,26 +1,4 @@
 #!/usr/bin/env python3
-"""
-scripts/validate.py
-───────────────────
-OPA Policy Evaluation Glue Script
-
-Orchestrates the full Security-as-Code validation pipeline:
-  1. Accepts a Terraform plan JSON file as input
-  2. Invokes the OPA CLI against all policies in the policies/ directory
-  3. Collects all denial messages produced by the deny rules
-  4. Renders a formatted compliance report to stdout and to a file
-  5. Exits with code 0 (all policies passed) or 1 (violations found)
-
-Usage:
-    python scripts/validate.py --plan <path_to_plan.json>
-    python scripts/validate.py --plan <path> --policies <dir> --output <file>
-
-Exit codes:
-    0  All policies passed — infrastructure is compliant
-    1  One or more policy violations found — deployment should be blocked
-    2  Script error (bad arguments, OPA not found, parse failure)
-"""
-
 import argparse
 import json
 import os
