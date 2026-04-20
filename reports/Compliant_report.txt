@@ -1,0 +1,16 @@
+
+==============================================================
+  SECURITY-AS-CODE — COMPLIANCE REPORT
+==============================================================
+  Timestamp   : 2026-04-20 17:53:22 UTC
+  Plan File   : /home/runner/work/OPA-code-as-security/OPA-code-as-security/plan.json
+  Policies    : data.terraform.security.deny
+  Status      : COMPLIANT      ✅
+  Violations  : 0
+==============================================================
+
+  ✅  All security policies passed.
+      Infrastructure configuration is compliant.
+      Safe to proceed with deployment.
+
+==============================================================
