@@ -1,22 +1,3 @@
-# .github/workflows/security-check.yml
-# ─────────────────────────────────────────────────────────────────────────────
-# Security-as-Code CI Pipeline
-#
-# Triggers on every push and pull request targeting the 'main' branch.
-# Generates a Terraform plan JSON and evaluates it against all OPA
-# security policies. The pipeline fails (blocks merge) if any violation
-# is found, and always uploads the compliance report as a downloadable
-# workflow artifact.
-#
-# Required GitHub Secrets:
-#   AWS_ACCESS_KEY_ID      — AWS access key (used for terraform plan only)
-#   AWS_SECRET_ACCESS_KEY  — AWS secret key (used for terraform plan only)
-#   AWS_DEFAULT_REGION     — AWS region (e.g. us-east-1)
-#
-# ⚠️  This pipeline NEVER runs terraform apply.
-#     AWS credentials are used solely to generate a valid plan JSON.
-# ─────────────────────────────────────────────────────────────────────────────
-
 name: OPA Security Policy Check
 
 on:
