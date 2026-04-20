@@ -1,0 +1,119 @@
+# .github/workflows/security-check.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# Security-as-Code CI Pipeline
+#
+# Triggers on every push and pull request targeting the 'main' branch.
+# Generates a Terraform plan JSON and evaluates it against all OPA
+# security policies. The pipeline fails (blocks merge) if any violation
+# is found, and always uploads the compliance report as a downloadable
+# workflow artifact.
+#
+# Required GitHub Secrets:
+#   AWS_ACCESS_KEY_ID      — AWS access key (used for terraform plan only)
+#   AWS_SECRET_ACCESS_KEY  — AWS secret key (used for terraform plan only)
+#   AWS_DEFAULT_REGION     — AWS region (e.g. us-east-1)
+#
+# ⚠️  This pipeline NEVER runs terraform apply.
+#     AWS credentials are used solely to generate a valid plan JSON.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: OPA Security Policy Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  TF_VERSION:  "1.5.7"
+  OPA_VERSION: "0.68.0"
+  TF_DIR:      "./terraform"
+  PLAN_BINARY: "tfplan"
+  PLAN_JSON:   "plan.json"
+
+jobs:
+  opa-security-check:
+    name: "Evaluate Terraform Plan Against OPA Policies"
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Step 1: Checkout ────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Step 2: Set up Python ───────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # ── Step 3: Set up Terraform ────────────────────────────────────────────
+      # terraform_wrapper: false is required so that `terraform show -json`
+      # outputs clean JSON without the wrapper's extra stdout interception.
+      - name: Set up Terraform ${{ env.TF_VERSION }}
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      # ── Step 4: Install OPA CLI ─────────────────────────────────────────────
+      - name: Install OPA CLI v${{ env.OPA_VERSION }}
+        run: |
+          echo "Downloading OPA v${{ env.OPA_VERSION }}..."
+          curl -fsSL -o /usr/local/bin/opa \
+            "https://github.com/open-policy-agent/opa/releases/download/v${{ env.OPA_VERSION }}/opa_linux_amd64_static"
+          chmod +x /usr/local/bin/opa
+          echo "OPA version: $(opa version)"
+
+      # ── Step 5: Terraform Init ──────────────────────────────────────────────
+      - name: Terraform Init
+        working-directory: ${{ env.TF_DIR }}
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION:    ${{ secrets.AWS_DEFAULT_REGION }}
+        run: |
+          echo "Initialising Terraform..."
+          terraform init -input=false
+
+      # ── Step 6: Terraform Plan → Binary → JSON ──────────────────────────────
+      # Runs `terraform plan` (never apply), then converts to JSON format
+      # so OPA can evaluate it. The plan JSON is written to the repo root.
+      - name: Generate Terraform Plan JSON
+        working-directory: ${{ env.TF_DIR }}
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION:    ${{ secrets.AWS_DEFAULT_REGION }}
+        run: |
+          echo "Running terraform plan..."
+          terraform plan \
+            -input=false \
+            -out="${{ env.PLAN_BINARY }}"
+
+          echo "Converting plan to JSON..."
+          terraform show -json "${{ env.PLAN_BINARY }}" > "../${{ env.PLAN_JSON }}"
+          echo "Plan JSON generated: $(wc -c < ../${{ env.PLAN_JSON }}) bytes"
+
+      # ── Step 7: Run OPA Security Policy Evaluation ──────────────────────────
+      # The Python script exits with code 1 if any violations are found,
+      # which causes this step (and the job) to fail — blocking the merge.
+      - name: Run OPA Security Policy Check
+        run: |
+          python scripts/validate.py \
+            --plan     "${{ env.PLAN_JSON }}" \
+            --policies "policies/" \
+            --output   "reports/compliance_report.txt"
+
+      # ── Step 8: Upload Compliance Report ────────────────────────────────────
+      # Runs even on failure (if: always()) so violation details are always
+      # accessible as a downloadable artifact in the Actions UI.
+      - name: Upload Compliance Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compliance-report-${{ github.run_number }}
+          path: reports/compliance_report.txt
+          retention-days: 30

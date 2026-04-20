@@ -1,0 +1,3 @@
+# This file intentionally left empty.
+# It keeps the reports/ directory tracked by Git.
+# Actual compliance reports (*.txt, *.json) are listed in .gitignore.
