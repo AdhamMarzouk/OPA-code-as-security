@@ -1,34 +1,3 @@
-# policies/s3_encryption.rego
-# ─────────────────────────────────────────────────────────────────────────────
-# Policy 1: S3 Encryption Required
-#
-# Purpose:
-#   Denies any aws_s3_bucket resource that does not have a corresponding
-#   aws_s3_bucket_server_side_encryption_configuration resource with a
-#   valid algorithm (AES256 or aws:kms).
-#
-# Why this matters:
-#   Unencrypted S3 buckets expose data at rest to anyone who gains
-#   access to the underlying storage. AWS recommends SSE as a baseline
-#   control for all buckets storing non-public data.
-#
-# AWS Provider v5 Note:
-#   The inline server_side_encryption_configuration block inside
-#   aws_s3_bucket is deprecated in AWS provider v5+. Encryption must
-#   now be configured via the standalone resource:
-#   aws_s3_bucket_server_side_encryption_configuration
-#
-# Correlation convention:
-#   The policy matches buckets to their SSE config resources by
-#   Terraform resource NAME (not the S3 bucket name). For example:
-#     aws_s3_bucket.MY_NAME  →  aws_s3_bucket_server_side_encryption_configuration.MY_NAME
-#   This is a deliberate naming convention enforced by this policy.
-#
-# Terraform resources checked:
-#   aws_s3_bucket (primary — triggers the deny)
-#   aws_s3_bucket_server_side_encryption_configuration (looked up to satisfy policy)
-# ─────────────────────────────────────────────────────────────────────────────
-
 package terraform.security
 
 import future.keywords

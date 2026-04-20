@@ -264,48 +264,6 @@ Three possible outcomes are written to `reports/compliance_report.txt`:
 
 ══════════════════════════════════════════════════════════════
 ```
-
-**Compliant run:**
-```
-══════════════════════════════════════════════════════════════
-  SECURITY-AS-CODE — COMPLIANCE REPORT
-══════════════════════════════════════════════════════════════
-  Timestamp   : 2026-04-19 10:55:12 UTC
-  Plan File   : /home/runner/work/OPA-code-as-security/plan.json
-  Policies    : data.terraform.security.deny
-  Status      : COMPLIANT      ✅
-  Violations  : 0
-══════════════════════════════════════════════════════════════
-
-  ✅  All security policies passed.
-      Infrastructure configuration is compliant.
-      Safe to proceed with deployment.
-
-══════════════════════════════════════════════════════════════
-```
-
-**Pipeline error run** (e.g. OPA parse error, missing plan file):
-```
-══════════════════════════════════════════════════════════════
-  SECURITY-AS-CODE — COMPLIANCE REPORT
-══════════════════════════════════════════════════════════════
-  Timestamp   : 2026-04-19 11:03:44 UTC
-  Status      : PIPELINE ERROR  ⚠️
-══════════════════════════════════════════════════════════════
-
-  PIPELINE ERROR — OPA EVALUATION DID NOT COMPLETE
-  ──────────────────────────────────────────────────────────────
-  OPA exited with non-zero code: 2
-
-  OPA stdout:
-  1 error occurred: policies/iam_wildcard.rego:74: rego_parse_error: ...
-
-  ──────────────────────────────────────────────────────────────
-  ⚠️  Check the workflow logs for the failed step above.
-
-══════════════════════════════════════════════════════════════
-```
-
 ---
 
 ## References

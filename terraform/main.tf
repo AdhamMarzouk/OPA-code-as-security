@@ -30,7 +30,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "compliant" {
   }
 }
 
-# ─── Policy 4: S3 Public Access Block ────────────────────────────────────────
+# ─── Policy 2: S3 Public Access Block ────────────────────────────────────────
 # Compliant: all four public-access block flags are set to true.
 resource "aws_s3_bucket_public_access_block" "compliant" {
   bucket = aws_s3_bucket.compliant.id
@@ -41,7 +41,7 @@ resource "aws_s3_bucket_public_access_block" "compliant" {
   restrict_public_buckets = true
 }
 
-# ─── Policy 2: No Public SSH ──────────────────────────────────────────────────
+# ─── Policy 3: No Public SSH ──────────────────────────────────────────────────
 # Compliant: port 22 is restricted to a private CIDR, not 0.0.0.0/0.
 resource "aws_security_group" "compliant" {
   name        = "${var.project_name}-compliant-sg"
@@ -69,7 +69,7 @@ resource "aws_security_group" "compliant" {
   }
 }
 
-# ─── Policy 3: No Wildcard IAM Actions ───────────────────────────────────────
+# ─── Policy 4: No Wildcard IAM Actions ───────────────────────────────────────
 # Compliant: only specific, least-privilege S3 actions are allowed.
 resource "aws_iam_policy" "compliant" {
   name        = "${var.project_name}-compliant-policy"

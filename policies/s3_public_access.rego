@@ -1,27 +1,3 @@
-# policies/s3_public_access.rego
-# ─────────────────────────────────────────────────────────────────────────────
-# Policy 4: S3 Public Access Block Required
-#
-# Purpose:
-#   Denies any aws_s3_bucket_public_access_block resource where at least
-#   one of the four mandatory block flags is not explicitly set to true.
-#
-# Why this matters:
-#   AWS S3 buckets can be made publicly accessible through ACLs or bucket
-#   policies. The public access block is a safety net that overrides both,
-#   preventing accidental data exposure even if an ACL or policy is
-#   misconfigured. All four flags must be enabled together to fully close
-#   the public access surface.
-#
-# The four flags that must ALL be true:
-#   - block_public_acls       — Blocks new public ACLs and ignores existing ones
-#   - block_public_policy     — Blocks new public bucket policies
-#   - ignore_public_acls      — Ignores all public ACLs on the bucket
-#   - restrict_public_buckets — Restricts public access via any policy
-#
-# Terraform resource checked: aws_s3_bucket_public_access_block
-# ─────────────────────────────────────────────────────────────────────────────
-
 package terraform.security
 
 import future.keywords

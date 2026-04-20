@@ -1,34 +1,6 @@
-# policies/iam_wildcard.rego
-# ─────────────────────────────────────────────────────────────────────────────
-# Policy 3: No Wildcard IAM Actions
-#
-# Purpose:
-#   Denies any aws_iam_policy resource that includes "*" in any
-#   Statement's Action field, regardless of whether Action is a
-#   bare string or an array.
-#
-# Why this matters:
-#   Wildcard IAM actions (Action: "*") grant the attached principal
-#   unrestricted access to every AWS API across every service. This
-#   directly violates the principle of least privilege and is a critical
-#   finding in virtually every cloud security audit. Policies must
-#   enumerate only the specific actions required for the task.
-#
-# Terraform resource checked: aws_iam_policy
-# ─────────────────────────────────────────────────────────────────────────────
-
 package terraform.security
 
 import future.keywords
-
-# ─── Main Rule ────────────────────────────────────────────────────────────────
-# Produces a denial message for every IAM policy containing "*" in any
-# Statement's Action field.
-#
-# Note on JSON decoding:
-#   In a Terraform plan, the `policy` attribute of aws_iam_policy is stored
-#   as a JSON-encoded *string* (not a nested object). We must call
-#   json.unmarshal() to decode it before we can traverse its structure.
 
 deny contains msg if {
     # Iterate over all planned resource changes

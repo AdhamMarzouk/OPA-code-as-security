@@ -1,20 +1,3 @@
-# policies/ssh_access.rego
-# ─────────────────────────────────────────────────────────────────────────────
-# Policy 2: No Public SSH Access
-#
-# Purpose:
-#   Denies any aws_security_group resource that permits inbound SSH
-#   (TCP port 22) from any IPv4 address (0.0.0.0/0).
-#
-# Why this matters:
-#   Exposing SSH to the public internet is one of the most common entry
-#   points for attackers. Brute-force, credential stuffing, and zero-day
-#   SSH exploits are trivially automated against open port 22. SSH access
-#   should always be restricted to a known CIDR range (VPN, bastion host).
-#
-# Terraform resource checked: aws_security_group
-# ─────────────────────────────────────────────────────────────────────────────
-
 package terraform.security
 
 import future.keywords
