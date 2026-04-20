@@ -136,18 +136,22 @@ def run_opa_eval(plan_path: str, policies_dir: str) -> list:
         )
 
     if result.returncode != 0:
-        stderr_detail = f"\n        OPA stderr: {result.stderr.strip()}" if result.stderr else ""
-        raise RuntimeError(
-            f"OPA exited with non-zero code: {result.returncode}{stderr_detail}"
-        )
+        parts = [f"OPA exited with non-zero code: {result.returncode}"]
+        if result.stdout.strip():
+            parts.append(f"OPA stdout:\n{result.stdout.strip()}")
+        if result.stderr.strip():
+            parts.append(f"OPA stderr:\n{result.stderr.strip()}")
+        if len(parts) == 1:
+            parts.append("(no output captured — check that the plan file and policy paths are correct)")
+        raise RuntimeError("\n\n".join(parts))
 
     # Parse OPA's JSON output
     try:
         opa_output = json.loads(result.stdout)
     except json.JSONDecodeError as exc:
         raise RuntimeError(
-            f"Could not parse OPA output as JSON: {exc}\n"
-            f"        Raw OPA stdout: {result.stdout[:500]}"
+            f"Could not parse OPA output as JSON: {exc}\n\n"
+            f"Raw OPA stdout:\n{result.stdout}"
         )
 
     # Navigate the OPA result structure to extract the deny set
