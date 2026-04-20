@@ -2,7 +2,7 @@
 
 > **Shift security left.** Enforce cloud infrastructure compliance *before* deployment using Open Policy Agent and Terraform plan analysis.
 
-[![OPA Security Check](https://github.com/<YOUR_USERNAME>/OPA-code-as-security/actions/workflows/security-check.yml/badge.svg)](https://github.com/<YOUR_USERNAME>/OPA-code-as-security/actions/workflows/security-check.yml)
+[![OPA Security Check](https://github.com/AdhamMarzouk/OPA-code-as-security/actions/workflows/security-check.yml/badge.svg)](https://github.com/AdhamMarzouk/OPA-code-as-security/actions/workflows/security-check.yml)
 
 ---
 
@@ -187,8 +187,9 @@ The pipeline is defined in `.github/workflows/security-check.yml`.
 | 4. Install OPA | Download OPA binary from GitHub releases |
 | 5. Terraform Init | Initialise the Terraform AWS provider |
 | 6. Generate Plan JSON | `terraform plan -out=tfplan && terraform show -json` |
-| 7. OPA Evaluation | `python scripts/validate.py` — exits 1 on violations |
-| 8. Upload Report | Always uploads `compliance_report.txt` as a workflow artifact |
+| 7. OPA Evaluation | `python scripts/validate.py` — exits 1 on violations, always writes the report file |
+| 8. Ensure Report Exists | Safety net (`if: always()`) — writes a formatted pipeline-error report if step 7 never ran (e.g. Terraform failed) |
+| 9. Upload Report | Always uploads `compliance_report.txt` as a workflow artifact (retained 30 days) |
 
 **Viewing Results:**
 1. Go to your repository → **Actions**
@@ -236,6 +237,8 @@ The pipeline is defined in `.github/workflows/security-check.yml`.
 
 ## Sample Compliance Report
 
+Three possible outcomes are written to `reports/compliance_report.txt`:
+
 **Non-compliant run:**
 ```
 ══════════════════════════════════════════════════════════════
@@ -277,6 +280,28 @@ The pipeline is defined in `.github/workflows/security-check.yml`.
   ✅  All security policies passed.
       Infrastructure configuration is compliant.
       Safe to proceed with deployment.
+
+══════════════════════════════════════════════════════════════
+```
+
+**Pipeline error run** (e.g. OPA parse error, missing plan file):
+```
+══════════════════════════════════════════════════════════════
+  SECURITY-AS-CODE — COMPLIANCE REPORT
+══════════════════════════════════════════════════════════════
+  Timestamp   : 2026-04-19 11:03:44 UTC
+  Status      : PIPELINE ERROR  ⚠️
+══════════════════════════════════════════════════════════════
+
+  PIPELINE ERROR — OPA EVALUATION DID NOT COMPLETE
+  ──────────────────────────────────────────────────────────────
+  OPA exited with non-zero code: 2
+
+  OPA stdout:
+  1 error occurred: policies/iam_wildcard.rego:74: rego_parse_error: ...
+
+  ──────────────────────────────────────────────────────────────
+  ⚠️  Check the workflow logs for the failed step above.
 
 ══════════════════════════════════════════════════════════════
 ```
