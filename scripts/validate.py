@@ -82,23 +82,19 @@ def parse_args() -> argparse.Namespace:
 # ──────────────────────────────────────────────────────────────────────────────
 
 def validate_inputs(plan_path: str, policies_dir: str) -> None:
-    """Raise SystemExit(2) with a clear message if inputs are invalid."""
+    """Raise RuntimeError with a clear message if inputs are invalid."""
     if not os.path.isfile(plan_path):
-        print(f"[ERROR] Plan file not found: {plan_path}", file=sys.stderr)
-        print(
-            "        Generate it with: terraform plan -out=tfplan && terraform show -json tfplan > plan.json",
-            file=sys.stderr,
+        raise RuntimeError(
+            f"Plan file not found: {plan_path}\n"
+            "        Generate it with: terraform plan -out=tfplan && terraform show -json tfplan > plan.json"
         )
-        sys.exit(2)
 
     if not os.path.isdir(policies_dir):
-        print(f"[ERROR] Policies directory not found: {policies_dir}", file=sys.stderr)
-        sys.exit(2)
+        raise RuntimeError(f"Policies directory not found: {policies_dir}")
 
     rego_files = [f for f in os.listdir(policies_dir) if f.endswith(".rego")]
     if not rego_files:
-        print(f"[ERROR] No .rego files found in: {policies_dir}", file=sys.stderr)
-        sys.exit(2)
+        raise RuntimeError(f"No .rego files found in: {policies_dir}")
 
     print(f"  Plan file    : {plan_path}")
     print(f"  Policies dir : {policies_dir}  ({len(rego_files)} policy file(s): {', '.join(rego_files)})")
@@ -134,26 +130,25 @@ def run_opa_eval(plan_path: str, policies_dir: str) -> list:
             check=False,
         )
     except FileNotFoundError:
-        print("[ERROR] OPA CLI not found on PATH.", file=sys.stderr)
-        print(
-            "        Install from: https://www.openpolicyagent.org/docs/latest/#running-opa",
-            file=sys.stderr,
+        raise RuntimeError(
+            "OPA CLI not found on PATH.\n"
+            "        Install from: https://www.openpolicyagent.org/docs/latest/#running-opa"
         )
-        sys.exit(2)
 
     if result.returncode != 0:
-        print(f"[ERROR] OPA exited with non-zero code: {result.returncode}", file=sys.stderr)
-        if result.stderr:
-            print(f"        OPA stderr: {result.stderr.strip()}", file=sys.stderr)
-        sys.exit(2)
+        stderr_detail = f"\n        OPA stderr: {result.stderr.strip()}" if result.stderr else ""
+        raise RuntimeError(
+            f"OPA exited with non-zero code: {result.returncode}{stderr_detail}"
+        )
 
     # Parse OPA's JSON output
     try:
         opa_output = json.loads(result.stdout)
     except json.JSONDecodeError as exc:
-        print(f"[ERROR] Could not parse OPA output as JSON: {exc}", file=sys.stderr)
-        print(f"        Raw OPA stdout: {result.stdout[:500]}", file=sys.stderr)
-        sys.exit(2)
+        raise RuntimeError(
+            f"Could not parse OPA output as JSON: {exc}\n"
+            f"        Raw OPA stdout: {result.stdout[:500]}"
+        )
 
     # Navigate the OPA result structure to extract the deny set
     # Structure: { "result": [ { "expressions": [ { "value": [...] } ] } ] }
@@ -211,6 +206,36 @@ def build_report(plan_path: str, denials: list) -> str:
 
     return "\n".join(lines)
 
+
+def build_error_report(error_msg: str) -> str:
+    """Build a formatted report for pipeline errors (OPA not found, bad plan, etc.)."""
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+    lines = [
+        "",
+        LINE_WIDE,
+        "  SECURITY-AS-CODE — COMPLIANCE REPORT",
+        LINE_WIDE,
+        f"  Timestamp   : {now}",
+        f"  Status      : PIPELINE ERROR  ⚠️",
+        LINE_WIDE,
+        "",
+        "  PIPELINE ERROR — OPA EVALUATION DID NOT COMPLETE",
+        "  " + LINE_THIN,
+    ]
+    for line in error_msg.splitlines():
+        lines.append(f"  {line}")
+    lines += [
+        "",
+        "  " + LINE_THIN,
+        "  ⚠️  Check the workflow logs for the failed step above.",
+        "",
+        LINE_WIDE,
+        "",
+    ]
+
+    return "\n".join(lines)
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Report Writer
 # ──────────────────────────────────────────────────────────────────────────────
@@ -237,25 +262,36 @@ def main() -> None:
     print("  Security-as-Code — OPA Policy Evaluator")
     print(LINE_WIDE)
 
-    # Step 1: Validate inputs
-    validate_inputs(args.plan, args.policies)
+    exit_code = 2
+    try:
+        # Step 1: Validate inputs
+        validate_inputs(args.plan, args.policies)
 
-    # Step 2: Run OPA CLI
-    denials = run_opa_eval(args.plan, args.policies)
+        # Step 2: Run OPA CLI
+        denials = run_opa_eval(args.plan, args.policies)
 
-    # Step 3: Build report
-    report = build_report(args.plan, denials)
+        # Step 3: Build report
+        report = build_report(args.plan, denials)
 
-    # Step 4: Print to stdout
-    print(report)
+        # Step 4: Print to stdout
+        print(report)
 
-    # Step 5: Save to file
-    write_report(report, args.output)
+        # Step 5: Save to file
+        write_report(report, args.output)
 
-    # Step 6: Exit with the appropriate code
-    #   0 → compliant (CI pipeline continues)
-    #   1 → violations found (CI pipeline fails and blocks merge)
-    sys.exit(1 if denials else 0)
+        # Step 6: Set exit code
+        #   0 → compliant (CI pipeline continues)
+        #   1 → violations found (CI pipeline fails and blocks merge)
+        exit_code = 1 if denials else 0
+
+    except RuntimeError as exc:
+        print(f"\n[ERROR] {exc}", file=sys.stderr)
+        error_report = build_error_report(str(exc))
+        print(error_report)
+        write_report(error_report, args.output)
+        exit_code = 2
+
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
