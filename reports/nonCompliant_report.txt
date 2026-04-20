@@ -1,0 +1,23 @@
+
+==============================================================
+  SECURITY-AS-CODE — COMPLIANCE REPORT
+==============================================================
+  Timestamp   : 2026-04-20 08:18:08 UTC
+  Plan File   : /home/runner/work/OPA-code-as-security/OPA-code-as-security/plan.json
+  Policies    : data.terraform.security.deny
+  Status      : NON-COMPLIANT  ❌
+  Violations  : 4
+==============================================================
+
+  POLICY VIOLATIONS FOUND
+  --------------------------------------------------------------
+  [01] DENY [IAM Wildcard] IAM policy 'wildcard' contains a wildcard (*) in an Action field. Replace with specific, least-privilege actions (e.g. s3:GetObject, ec2:DescribeInstances).
+  [02] DENY [S3 Encryption] Bucket 'no_encryption' does not have a corresponding aws_s3_bucket_server_side_encryption_configuration resource. Create one named 'no_encryption' with sse_algorithm set to AES256 or aws:kms.
+  [03] DENY [S3 Public Access] Public access block 'not_blocked' has the following flags not set to true: {"block_public_acls", "block_public_policy", "ignore_public_acls", "restrict_public_buckets"}. All four flags (block_public_acls, block_public_policy, ignore_public_acls, restrict_public_buckets) must be true.
+  [04] DENY [SSH Access] Security group 'public_ssh' allows SSH (TCP port 22) from 0.0.0.0/0. Restrict the cidr_blocks to a known private range (e.g. 10.0.0.0/8 or your VPN CIDR).
+
+  --------------------------------------------------------------
+  ⛔  ACTION REQUIRED: Resolve all violations before deployment.
+      Fix the Terraform configuration and re-run the pipeline.
+
+==============================================================
